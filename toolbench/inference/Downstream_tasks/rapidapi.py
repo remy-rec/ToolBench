@@ -515,10 +515,11 @@ class pipeline_runner:
             max_query_count=200,
             callbacks=callbacks
         )
-        [callback.on_request_end(
-            chain=chain.terminal_node[0].messages,
-            outputs=chain.terminal_node[0].description,
-        ) for callback in callbacks]
+        if 0 < len(chain.terminal_node):
+            [callback.on_request_end(
+                chain=chain.terminal_node[0].messages,
+                outputs=chain.terminal_node[0].description,
+            ) for callback in callbacks]
         if output_dir_path is not None:
             with open(output_file_path,"w") as writer:
                 data = chain.to_json(answer=True,process=True)

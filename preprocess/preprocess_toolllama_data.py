@@ -3,6 +3,7 @@ Data preprocessing
 """
 import argparse
 import json
+import logging
 import os
 import random
 from toolbench.utils import process_system_message
@@ -49,69 +50,73 @@ def preprocess_rapidapi(tool_data_dir, method, output_file):
         for train_message in train_messages:
             conversations = []
             cur_react = ""
-            for message_id, message_dict in enumerate(train_message):
-                role = message_dict["role"]
-                content = message_dict["content"]
-                if role == "assistant":
-                    inputs = process_assistant_reply(message_dict) 
-                    
-                    # process the last assistant message as target
-                    if message_id + 1 == len(train_message):
-                        if "function_call" not in message_dict:
-                            cur_react = ""
-                            break
-                        else:
-                            if cur_react == "":
-                                cur_react += "\nThought: "
-                            action = inputs["name"]
-                            action_input = inputs["arguments"]
-                            cur_react += f"\nAction: {action}"
-                            cur_react += f"\nAction Input: {action_input}"
-                            conversations.append({
-                                "from": role,
-                                "value": cur_react
-                            })
-                            cur_react = ""
-                        tmp_dict = {
-                            "id": f"Step {str(message_id)}: {query}",
-                            "conversations":conversations
-                        }
-                        tmp_instances.append(tmp_dict)      
-                        break
+            try:
+                for message_id, message_dict in enumerate(train_message):
+                    role = message_dict["role"]
+                    content = message_dict["content"]
+                    if role == "assistant":
+                        inputs = process_assistant_reply(message_dict)
 
-                    # process the former assistant messages into history conversations
-                    else:
-                        if "function_call" not in message_dict:
-                            cur_react += f"\nThought: {inputs}"
-                            continue
+                        # process the last assistant message as target
+                        if message_id + 1 == len(train_message):
+                            if "function_call" not in message_dict:
+                                cur_react = ""
+                                break
+                            else:
+                                if cur_react == "":
+                                    cur_react += "\nThought: "
+                                action = inputs["name"]
+                                action_input = inputs["arguments"]
+                                cur_react += f"\nAction: {action}"
+                                cur_react += f"\nAction Input: {action_input}"
+                                conversations.append({
+                                    "from": role,
+                                    "value": cur_react
+                                })
+                                cur_react = ""
+                            tmp_dict = {
+                                "id": f"Step {str(message_id)}: {query}",
+                                "conversations":conversations
+                            }
+                            tmp_instances.append(tmp_dict)
+                            break
+
+                        # process the former assistant messages into history conversations
                         else:
-                            if cur_react == "":
-                                cur_react += "\nThought: "
-                            action = inputs["name"]
-                            action_input = inputs["arguments"]
-                            cur_react += f"\nAction: {action}"
-                            cur_react += f"\nAction Input: {action_input}"
-                            conversations.append({
-                                "from": role,
-                                "value": cur_react
-                            })
-                            cur_react = ""
-                else:
-                    if role == "system":
-                        inputs = process_system_message(content, functions)
+                            if "function_call" not in message_dict:
+                                cur_react += f"\nThought: {inputs}"
+                                continue
+                            else:
+                                if cur_react == "":
+                                    cur_react += "\nThought: "
+                                action = inputs["name"]
+                                action_input = inputs["arguments"]
+                                cur_react += f"\nAction: {action}"
+                                cur_react += f"\nAction Input: {action_input}"
+                                conversations.append({
+                                    "from": role,
+                                    "value": cur_react
+                                })
+                                cur_react = ""
                     else:
-                        inputs = content
-                    conversations.append({
-                        "from": role,
-                        "value": inputs
-                    })
-                    cur_react = ""
+
+                        if role == "system":
+                            inputs = process_system_message(content, functions)
+                        else:
+                            inputs = content
+                        conversations.append({
+                            "from": role,
+                            "value": inputs
+                        })
+                        cur_react = ""
+            except Exception as e:
+                logging.error(e, exc_info=True)
         out_list.append(tmp_instances)
     out_list = append_list(out_list)
-    json.dump(out_list, open(output_file,"w"), indent=4, ensure_ascii=False)  
+    json.dump(out_list, open(output_file,"w"), indent=4, ensure_ascii=False)
     print("Preprocessing done.")
-        
+
 if __name__=='__main__':
     args = parser.parse_args()
     preprocess_rapidapi(args.tool_data_dir, args.method, args.output_file)
-    
+

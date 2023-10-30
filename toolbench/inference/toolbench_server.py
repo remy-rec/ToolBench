@@ -1,3 +1,5 @@
+import traceback
+
 from flask import Flask, Response, stream_with_context, request
 from flask_cors import CORS, cross_origin
 from callbacks.ServerEventCallback import ServerEventCallback
@@ -79,6 +81,8 @@ class Model:
         parser.add_argument('--tool_root_dir', type=str, default="your_tools_path/", required=True, help='')
         parser.add_argument("--lora", action="store_true", help="Load lora model or not.")
         parser.add_argument('--lora_path', type=str, default="your_lora_path if lora", required=False, help='')
+        parser.add_argument('--max_sequence_length', type=int, default=2048, required=False)
+        parser.add_argument('--max_source_sequence_length', type=int, default=1024, required=False)
         parser.add_argument('--max_observation_length', type=int, default=1024, required=False,
                             help='maximum observation length')
         parser.add_argument('--observ_compress_method', type=str, default="truncate", choices=["truncate", "filter", "random"], 
@@ -143,13 +147,13 @@ def stream():
                 except Exception as e:
                     model.inuse = False
                     print(obj)
-                    print(e)
+                    print(traceback.format_exc())
 
             try:
                 future.result()
             except Exception as e:
                 model.inuse = False
-                print(e)
+                print(traceback.format_exc())
 
         model.inuse = False
         return
