@@ -461,8 +461,12 @@ ToolBench contains a Web UI based on [Chatbot UI](https://github.com/mckaywrigle
 
 ### Web UI
 ```bash
+
 apt-get update
-apt-get install npm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+source ~/.bashrc
+conda activate 
+nvm install 19.0.0
 git clone https://github.com/lilbillybiscuit/chatbot-ui-toolllama
 cd chatbot-ui-toolllama
 npm install
